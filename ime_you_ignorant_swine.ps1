@@ -1,23 +1,17 @@
-#param (
-#    [Parameter(Mandatory=$true)]
-#    [String]
-#    $Language
-#)
-#
-#$langs = Get-Language -Language $Language
-#if ($langs.count -eq 0) {
-#    Write-Host 'installing language' $Language
-#    Install-Language -Language $Language
-#}
-#
-#Get-ChildItem -path 'hklm:\System\CurrentControlSet\Control\Keyboard Layouts'
-#
-#Get-ChildItem -path 'hklm:\System\CurrentControlSet\Control\Keyboard Layouts' |
-#    Foreach-Object {
-#        $Entry = $_
-#        $Entry.GetValue('Layout File')
-#    }
+$ErrorActionPreference = "Stop"
 
+# @via: https://learn.microsoft.com/en-us/archive/blogs/virtual_pc_guy/a-self-elevating-powershell-script
+$winID = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+$winPrinc = new-object System.Security.Principal.WindowsPrincipal($winID)
+$adminRole = [System.Security.Principal.WindowsBuiltInRole]::Administrator
+
+if (-Not $winPrinc.IsInRole($adminRole)) {
+    $newProc = new-object System.Diagnostics.ProcessStartInfo "PowerShell"
+    $newProc.Arguments = $myInvocation.MyCommand.Definition
+    $newProc.Verb = "runas"
+    [System.Diagnostics.Process]::Start($newProc)
+    exit
+}
 
 $Langs = (Get-WinUserLanguageList) | ForEach-Object {
     $LangEntry = $_
@@ -36,19 +30,39 @@ $Langs = (Get-WinUserLanguageList) | ForEach-Object {
     return $obj
 }
 
-Write-Host 'Select a language:'
+Write-Host 'Languages:'
 for ($i = 0; $i -lt $Langs.Length; $i++) {
     $Lang = $Langs[$i]
     Write-Host "[$i] $($Lang.Lang) $($Lang.LayoutDLL)"
 }
 
+$SelectedLang = $null
+:prompt while ($SelectedLang -eq $null) {
+    $choice = Read-Host 'Select a language (default: 0)'
+    switch -regex ($choice) {
+        '^\d*$' {
+            $choice = if ($choice -ne $null) { [int]$choice } else { 0 }
+            if ($choice -lt $Langs.Length) {
+                $SelectedLang = $Langs[$choice]
+                break prompt
+            }
+        }
+        default {}
+    }
+    Write-Host 'invalid option'
+}
+
+$IMEPath = 'hklm:\System\CurrentControlSet\Control\Keyboard Layouts\00000411'
+$IMEProp = 'Layout File'
+
+New-ItemProperty -Path $IMEPath -Name $IMEProp -Value $SelectedLang.LayoutDLL -PropertyType String -Force
+
+$i8042Path = 'hklm:\System\CurrentControlSet\Services\i8042prt\Parameters'
+$driverJPN = 'LayerDriver JPN'
+$driverKOR = 'LayerDriver KOR'
+
+New-ItemProperty -Path $i8042Path -Name $driverJPN -Value $SelectedLang.LayoutDLL -PropertyType String -Force
+New-ItemProperty -Path $i8042Path -Name $driverKOR -Value $SelectedLang.LayoutDLL -PropertyType String -Force
+
+Read-Host '<enter> finish'
 exit 0
-
-Write-Host $Langs[0].LocalizedName ':' $Langs[0].InputMethodTips
-
-
-$default_layout = (Get-ItemProperty -path 'hkcu:\Keyboard Layout\Preload').1
-$keeb = Get-ItemProperty -path "hklm:\System\CurrentControlSet\Control\Keyboard Layouts\$default_layout"
-$layout_dll = $keeb.'Layout File'
-
-Host-Write 'found layout dll:' $layout_dll
