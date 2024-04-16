@@ -21,6 +21,28 @@ function Check {
     }
 }
 
+function Install-Japanese-IME {
+    Install-Language -Language ja-JP
+    Write-Host 'IME installed.'
+}
+
+function Ensure-Japanese-IME {
+    $langs = Get-InstalledLanguage -Language ja-JP
+    if ($langs.count -gt 0) {
+        Write-Host 'Japanese IME already installed.'
+        return
+    }
+    $prompt = {
+        $choice = Read-Host 'No Japanese IME installed, install now? [Y/n]'
+        switch -regex ($choice) {
+            '^Y?$' {Install-Japanese-IME}
+            '^N$' {Write-Host "You'll have to setup IME manually, and then import the .reg file yourself."; exit -1}
+            default {Write-Host 'invalid option'; &$prompt}
+        }
+    }
+    &$prompt
+}
+
 function Install-Kaufmann {
     Write-Host 'downloading kaufmann...'
     $out_file = [IO.Path]::Combine($tmp_dir, 'kaufmann.exe')
@@ -55,12 +77,13 @@ function Setup-Registry {
 }
 
 $choice = Read-Host "[K]aufmann or [A]lbrecht? (default K)"
-Switch ($choice) {
-    '' {Install-Kaufmann}
-    'K' {Install-Kaufmann}
-    'A' {Install-Albrecht}
+Switch -regex ($choice) {
+    '^K?$' {Install-Kaufmann}
+    '^A$' {Install-Albrecht}
     default {Write-Host 'invalid option'; exit -1}
 }
+
+Ensure-Japanese-IME
 
 Setup-Registry
 
