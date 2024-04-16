@@ -1,5 +1,18 @@
 $ErrorActionPreference = "Stop"
 
+# @via: https://learn.microsoft.com/en-us/archive/blogs/virtual_pc_guy/a-self-elevating-powershell-script
+$winID = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+$winPrinc = new-object System.Security.Principal.WindowsPrincipal($winID)
+$adminRole = [System.Security.Principal.WindowsBuiltInRole]::Administrator
+
+if (-Not $winPrinc.IsInRole($adminRole)) {
+    $newProc = new-object System.Diagnostics.ProcessStartInfo "PowerShell"
+    $newProc.Arguments = $myInvocation.MyCommand.Definition
+    $newProc.Verb = "runas"
+    [System.Diagnostics.Process]::Start($newProc)
+    exit
+}
+
 # https://www.kaufmann.no/roland/dvorak/
 # https://immanuel-albrecht.de/pdvrkde/
 $kbddvp_kaufmann = 'https://www.kaufmann.no/downloads/winnt/kbddvp-1_2_8-i386.exe'
