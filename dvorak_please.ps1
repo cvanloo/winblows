@@ -104,3 +104,6 @@ Ensure-Japanese-IME
 Setup-Registry
 
 Write-Host 'setup completed.'
+
+Read-Host '<enter> finish'
+exit 0

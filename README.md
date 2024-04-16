@@ -30,8 +30,9 @@ How to fix:
 ...if you want to use Programmer's Dvorak, or:
 
 ```powershell
-./ime_you_ignorant_swine.ps1 -Language <LANG>
-# e.g., <LANG> = de-CH
+./ime_you_ignorant_swine.ps1
+# in the prompt select the correct layout
+# (default value is your default (number 1) layout
 ```
 
-...to choose the layout yourself.
+...to choose from one of your installed layouts.
