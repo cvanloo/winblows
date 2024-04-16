@@ -13,9 +13,8 @@ if (-Not $winPrinc.IsInRole($adminRole)) {
     exit
 }
 
-$Langs = (Get-WinUserLanguageList) | ForEach-Object {
-    $LangEntry = $_
-
+$Langs = @()
+foreach ($LangEntry in (Get-WinUserLanguageList)) {
     foreach ($layout in $LangEntry.InputMethodTips.Split(':')) {
         if ($layout.Length -gt 8) {continue}
         $padded_layout = $layout.PadLeft(8, '0')
@@ -25,9 +24,8 @@ $Langs = (Get-WinUserLanguageList) | ForEach-Object {
             Lang = $LangEntry.LocalizedName
             LayoutDLL = $keeb.'Layout File'
         }
+        $Langs += $obj
     }
-
-    return $obj
 }
 
 Write-Host 'Languages:'
