@@ -76,12 +76,15 @@ function Setup-Registry {
     Check
 }
 
-$choice = Read-Host "[K]aufmann or [A]lbrecht? (default K)"
-Switch -regex ($choice) {
-    '^K?$' {Install-Kaufmann}
-    '^A$' {Install-Albrecht}
-    default {Write-Host 'invalid option'; exit -1}
+$prompt = {
+    $choice = Read-Host "[K]aufmann or [A]lbrecht? (default K)"
+    Switch -regex ($choice) {
+        '^K?$' {Install-Kaufmann}
+        '^A$' {Install-Albrecht}
+        default {Write-Host 'invalid option'; &$prompt}
+    }
 }
+&$prompt
 
 Ensure-Japanese-IME
 
